@@ -1,8 +1,8 @@
 {
   "name": "easy-api-fixtures",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Easily create fixtures from an API",
-  "main": "dist/easyApiFixtures.js",
+  "main": "dist/index.js",
   "scripts": {
     "test": "mocha --compilers js:babel-register",
     "build": "rimraf dist && babel src -d dist",
