@@ -1,6 +1,6 @@
 {
   "name": "easy-api-fixtures",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Easily create fixtures from an API",
   "main": "dist/index.js",
   "scripts": {
@@ -24,6 +24,7 @@
   "dependencies": {
     "app-root-dir": "^1.0.2",
     "axios": "^0.17.1",
+    "babel-polyfill": "^6.26.0",
     "lodash": "^4.17.5",
     "mkdirp": "^0.5.1",
     "sanitize-filename": "^1.6.1"
@@ -33,7 +34,6 @@
     "babel-core": "^6.26.0",
     "babel-eslint": "^8.2.1",
     "babel-minify": "^0.3.0",
-    "babel-polyfill": "^6.26.0",
     "babel-preset-env": "^1.6.1",
     "babel-preset-minify": "^0.3.0",
     "babel-preset-stage-0": "^6.24.1",
