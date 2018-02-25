@@ -25,6 +25,10 @@ class easyApiFixtures {
     this.config = this.parseConfig(this.constructor.loadFile(configPath));
   }
 
+  /**
+   * Loads file dynamicaly
+   * @param {String} path - relative path to a file
+   */
   static loadFile(path) {
     try {
       const file = require(path); //eslint-disable-line
@@ -34,6 +38,11 @@ class easyApiFixtures {
     }
   }
 
+  /**
+   * Retrieves information from an external API
+   * @param {Object} api - An object that holds information on an api from the config file
+   * @param {Function} requestFn - (default axios) the promise based http request function
+   */
   static async getFixturesDataFromApi(api, requestFn = axios.get) {
     const _getData = (url, endpoint, slug) =>
       requestFn(`${url}/${endpoint}/${slug}`)
@@ -54,12 +63,20 @@ class easyApiFixtures {
     return fixtures;
   }
 
+  /**
+   * Tests for directory's existence and creates it if it does not
+   * @param {String} filePath - path to directory
+   */
   static async ensureDirectoryExistence(filePath) {
     if (!fs.existsSync(filePath)) {
       mkdirp.sync(filePath);
     }
   }
 
+  /**
+   * Parses a config object to be used by the application
+   * @param {Object} config - the configuration object
+   */
   parseConfig(config) {
     const newConfig = config;
     newConfig.output = Object.assign({}, this.defaults.output, config.output);
@@ -78,6 +95,10 @@ class easyApiFixtures {
     return Object.assign({}, newConfig, { api: apis });
   }
 
+  /**
+   * Returns the base path based on the api provided
+   * @param {Object} api - An object that holds information on an api from the config file
+   */
   getBasePath(api) {
     const { output } = this.config;
     return _path.join(
@@ -88,15 +109,26 @@ class easyApiFixtures {
     );
   }
 
+  /**
+   * Returns the configuration
+   */
   getConfig() {
     return this.config;
   }
 
+  /**
+   * Returns the filename based on slug provided and configuration
+   * @param {String} slug - the slug of the request
+   */
   getFileName(slug) {
     const name = this.config.output.filename.replace('[name]', slug);
     return name;
   }
 
+  /**
+   * Returns data using a real URL and the config
+   * @param {String} target - the real URL to mock
+   */
   request(target) {
     const regEx = /.*:\/\/.*?(?=\/)|\[mock\]/gm;
     const base = target.match(regEx)[0];
@@ -113,6 +145,9 @@ class easyApiFixtures {
     return this.constructor.loadFile(fixturePath);
   }
 
+  /**
+   * Loads API data based on the configuration
+   */
   async loadData() {
     this.fixtureData = await Promise.all(
       this.config.api.map(async api => {
@@ -125,6 +160,10 @@ class easyApiFixtures {
     );
   }
 
+  /**
+   * Writes a fixture to file based on the parameters
+   * @param {Object} {fixturePath, slug, endpoint, data}
+   */
   async writeFile({ fixturePath, slug, endpoint, data }) {
     await this.constructor.ensureDirectoryExistence(
       _path.join(fixturePath, endpoint)
@@ -139,6 +178,9 @@ class easyApiFixtures {
     });
   }
 
+  /**
+   * Runs the application to create fixtures
+   */
   async run() {
     await this.loadData();
     this.fixtureData.forEach(data => {
