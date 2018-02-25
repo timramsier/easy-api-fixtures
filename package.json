@@ -1,6 +1,6 @@
 {
   "name": "easy-api-fixtures",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Easily create fixtures from an API",
   "main": "dist/easyApiFixtures.js",
   "scripts": {

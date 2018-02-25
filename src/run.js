@@ -1,6 +1,6 @@
 #! /usr/bin/env node
 
-const EasyApiFixtures = require('./easyApiFixtures');
+const EasyApiFixtures = require('./index');
 
 const easyApiFixtures = new EasyApiFixtures();
 
