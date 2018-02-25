@@ -1,0 +1,15 @@
+{
+  "string": "this is a string",
+  "arrayOfNumbers": [1, 2, 3],
+  "arrayOfString": ["one", "two", "three"],
+  "arrayOfObjects": [
+    { "number": 1, "string": "one" },
+    { "number": 2, "string": "two" },
+    { "number": 3, "string": "three" }
+  ],
+  "object": {
+    "string": "object",
+    "array": ["object"],
+    "nullTest": null
+  }
+}
