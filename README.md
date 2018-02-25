@@ -19,12 +19,6 @@ To use this library you just need to include a `fixtures.config.js` file in your
 ```bash
 createFixtures
 ```
-Alternatively, you can add a script to your `package.json` file:
-```json
-"scripts": {
-  "fixtures": "createFixtures"
-}
-```
 
 ## Request Fixture Data
 
