@@ -1,5 +1,4 @@
 require('babel-polyfill');
-require('babel-core/register');
 
 const _path = require('path');
 const axios = require('axios');
