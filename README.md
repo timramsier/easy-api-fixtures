@@ -14,7 +14,32 @@ Install with yarn
 ```bash
 yarn add easy-api-fixtures --dev=yes
 ```
+## Creating Fixtures
+To use this library you just need to include a `fixtures.config.js` file in your projects root directory.  Once that is done you can run the following command in the command line:
+```bash
+createFixtures
+```
+Alternatively, you can add a script to your `package.json` file:
+```json
+"scripts": {
+  "fixtures": "createFixtures"
+}
+```
 
+## Request Fixture Data
+
+Once the fixtures are created, you will need to use the library to easily retrieve the fixture data.  That is as easy as importing the library into your tests and using the `request()` function.
+```javascript
+const mockApi = require('easy-api-fixtures');
+
+...
+// url should be the real url that would be used to retrieve the data in production
+const url = 'http://www.fake-api.com/post/1'
+const data = mockApi.request(url)
+...
+
+// You can now use 'data' in your testing needs
+```
 ## Basic Config Example
 The following is a basic example of the bare minimum amount of configuration that needs to be in the `fixtures.config.js` file.  The following configuration will create `./test/fixtures/post/1.json` with the data that a `GET` request to `http://www.fake-api.com/post/1` would provide.
 
