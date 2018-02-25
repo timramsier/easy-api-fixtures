@@ -1,15 +1,15 @@
 {
   "name": "easy-api-fixtures",
-  "version": "1.0.4",
+  "version": "1.0.7",
   "description": "Easily create fixtures from an API",
-  "main": "dist/index.js",
+  "main": "dist/easyApiFixtures.js",
   "scripts": {
     "test": "mocha --compilers js:babel-register",
     "build": "rimraf dist && babel src -d dist",
     "prod-build": "BABEL_ENV=production npm run build"
   },
   "bin": {
-    "createFixtures": "./dist/index.js"
+    "createFixtures": "./dist/run.js"
   },
   "repository": {
     "type": "git",
@@ -22,7 +22,6 @@
   },
   "homepage": "https://github.com/timramsier/easy-api-fixtures#readme",
   "dependencies": {
-    "app-root-dir": "^1.0.2",
     "axios": "^0.17.1",
     "babel-polyfill": "^6.26.0",
     "lodash": "^4.17.5",

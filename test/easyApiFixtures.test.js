@@ -1,7 +1,7 @@
 const { describe, it } = require('mocha');
 const { expect } = require('chai');
 const fs = require('fs');
-const EasyApiFixtures = require('../src/easyApiFixtures');
+const EasyApiFixtures = require('../src/index');
 const path = require('path');
 const rimraf = require('rimraf');
 
