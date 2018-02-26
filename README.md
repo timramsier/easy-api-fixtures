@@ -1,6 +1,6 @@
 # easy-api-fixtures
 
-This library uses a declaritbve methodolgy to make it easy to create data fixtures for your testing needs.  If you are like me, you strongly dislike having to keep your data fixtures up to date after changes are made to an upstream API dependency.  To make it easier to manage these changes, this packages uses allows you to include a `fixtures.config.js` to control your fixtures.
+This library uses a declarative methodology to make it easy to create data fixtures for your testing needs.  If you are like me, you strongly dislike having to keep your data fixtures up to date after changes are made to an upstream API dependency.  To make it easier to manage these changes, this packages uses allows you to include a `fixtures.config.js` to control your fixtures.
 
 ## Install
 [npm: easy-api-fixtures](https://www.npmjs.com/package/easy-api-fixtures)
@@ -84,7 +84,7 @@ module.exports = {
     url: String,
     version: String,
     alias: String,
-    // `fixture` can be either a single Object or an Arrat of them
+    // `fixture` can be either a single Object or an Array of them
     fixture: [
       {
         endpoint: String | Array,
