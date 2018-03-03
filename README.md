@@ -75,9 +75,6 @@ module.exports = {
   output: {
     filename: String,
     path: String,
-    endpointInPath: Boolean,
-    versionInPath: Boolean,
-    aliasInPath: Boolean,
   },
   // `api` can be either a single Object or an Array of them
   api: {
@@ -104,16 +101,10 @@ module.exports = {
 This sets the pattern to be used when creating the fixture files.  `[name]` is replaced by the `slug` of the api request.
 #### path _String_
 ##### Required
-This is the path where the fixtures will be stored.
-#### endpointInPath _Boolean_
-##### Default: `true`
-This determines whether the API endpoint should be included in the save path for fixtures and the retrieval path.
-#### versionInPath _Boolean_
-##### Default: `true`
-This determines whether the API version should be included in the save path for fixtures and the retrieval path.
-#### aliasInPath _Boolean_
-##### Default: `true`
-This determines whether the API alias (via config file) should be included in the save path for fixtures and the retrieval path.
+This is the path where the fixtures will be stored.  This accepts string replacement of `[api]`, `[endpoint]`, and `[version]` in the path. 
+
+For example `'test/fixtures/[version]/[api]/[endpoint]'` would inclue a directory for the version, then the api (or `alias`), and then the `endpoint` name.
+
 ### api _Object_ or _Array_
 This is either a single or an array of apis that will be used to create fixtures.
 #### url _String_
@@ -123,6 +114,10 @@ The version of the API to make the requests against. (ex. v1, v2, beta )
 #### alias _String_ or _Array_
 ##### Default: _A sanitized representation of the `url` property_
 This is the name of the directory that will be used to save all fixture data for the API.  This defaults to a sanitized representation of the `url` used to make the request.  For example, http://www.fake-api.com will become **httpwwwfake-apicom**
+
+#### path _String_
+
+This works the same as the `output` path property but is api specific and it supersedes the `output` values.
 #### fixture _Object_ or _Array_
 This is either a single or an array of objects used to determine what requests to make to create the fixtures
 ##### endpoint _String_ or _Array_

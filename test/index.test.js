@@ -1,15 +1,15 @@
 const { describe, it } = require('mocha');
 const { expect } = require('chai');
 const fs = require('fs');
-const EasyApiFixtures = require('../src/index');
 const path = require('path');
 const rimraf = require('rimraf');
+const EasyApiFixtures = require('../src/index');
+const { stringReplace } = require('../src/utils');
 
 describe('The EasyApiFixtures class should work correctly', () => {
   const configPath = path.join(__dirname, 'fixtures/mock.config.js');
   const easyApi = new EasyApiFixtures(configPath);
   const config = easyApi.constructor.loadFile(configPath);
-
   describe('Configuration file works correctly.', () => {
     it('loadFile should load the file with no error', done => {
       expect(config).to.be.a('object');
@@ -29,7 +29,7 @@ describe('The EasyApiFixtures class should work correctly', () => {
 
   describe('parseConfig handles config correctly', () => {
     it('should transform api.*.fixture.*.slug to array if a string', done => {
-      const unparsedSlug = config.api.fixture[0].slug;
+      const unparsedSlug = config.api[0].fixture[0].slug;
       const { slug } = easyApi.parseConfig(config).api[0].fixture[0];
       expect(unparsedSlug).to.be.a('string');
       expect(slug).to.be.a('array');
@@ -37,7 +37,7 @@ describe('The EasyApiFixtures class should work correctly', () => {
     });
 
     it('should transform api.*.fixture.*.endpoint to array if a string', done => {
-      const unparsedEndpoint = config.api.fixture[0].endpoint;
+      const unparsedEndpoint = config.api[0].fixture[0].endpoint;
       const { endpoint } = easyApi.parseConfig(config).api[0].fixture[0];
       expect(unparsedEndpoint).to.be.a('string');
       expect(endpoint).to.be.a('array');
@@ -47,49 +47,46 @@ describe('The EasyApiFixtures class should work correctly', () => {
 
   describe('Fixture data retrieval should work correctly', () => {
     it(`request should return mock api data`, done => {
-      const data = easyApi.request('[mock]/mock/data');
+      const data = easyApi.request('mock-api/mock/data');
       expect(data).to.be.a('object');
       done();
     });
   });
 
   describe('getBasePath should return a valid path', () => {
-    it('{versionInPath: true, aliasInPath: true} - should return mock/v1/mock', done => {
-      easyApi.config.output.versionInPath = true;
-      easyApi.config.output.aliasInPath = true;
-      const basePath = easyApi.getBasePath(easyApi.config.api[0]);
+    it('output.path = "test/fixtures/[api]/[version]/[endpoint]" - should return mock/v1/[endpoint]', done => {
+      const basePath = easyApi.getBasePath(easyApi.config.api[2]);
       expect(basePath).to.equal(
-        path.join(easyApi.appRootDir, easyApi.config.output.path, 'mock/v1')
+        path.join(easyApi.appRootDir, 'test/fixtures/mock/v1/[endpoint]')
       );
       done();
     });
-    it('{versionInPath: false, aliasInPath: true} - should return mock/mock', done => {
-      easyApi.config.output.versionInPath = false;
-      easyApi.config.output.aliasInPath = true;
-      const basePath = easyApi.getBasePath(easyApi.config.api[0]);
+    it('output.path = "test/fixtures/[api]/[endpoint]" - should return mock/[endpoint]', done => {
+      const basePath = easyApi.getBasePath(easyApi.config.api[1]);
       expect(basePath).to.equal(
-        path.join(easyApi.appRootDir, easyApi.config.output.path, 'mock')
+        path.join(easyApi.appRootDir, 'test/fixtures/mock/[endpoint]')
       );
       done();
     });
-    it('{versionInPath: false, aliasInPath: false} - should return /', done => {
-      easyApi.config.output.versionInPath = false;
-      easyApi.config.output.aliasInPath = false;
+    it('output.path = "test/fixtures/[version]/[endpoint]" - should return v1/[endpoint]', done => {
       const basePath = easyApi.getBasePath(easyApi.config.api[0]);
       expect(basePath).to.equal(
-        path.join(easyApi.appRootDir, easyApi.config.output.path)
+        path.join(easyApi.appRootDir, 'test/fixtures/v1/[endpoint]')
       );
       done();
     });
   });
 
   describe('File system interactions work correctly', () => {
-    const testPath = './test/dir/';
-    const filePath = path.join(testPath, 'endpoint/slug.json');
+    const basePath = './test/dir';
+    const testPath = stringReplace(`${basePath}/[endpoint]`, {
+      '[endpoint]': 'endpoint',
+    });
+    const filePath = path.join(testPath, 'slug.json');
 
     describe('ensureDirectoryExistence work correctly', () => {
       easyApi.constructor.ensureDirectoryExistence(testPath);
-      it(`should correctly create ${testPath}`, done => {
+      it(`should correctly create ${filePath})}`, done => {
         expect(fs.existsSync(testPath)).to.equal(true);
         done();
       });
@@ -121,7 +118,7 @@ describe('The EasyApiFixtures class should work correctly', () => {
     });
 
     // remove created directory
-    setTimeout(() => rimraf(testPath, () => null), 1000);
+    setTimeout(() => rimraf(basePath, () => null), 1000);
   });
 
   describe('External API requests should work', () => {
