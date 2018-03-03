@@ -7,6 +7,7 @@ const _ = require('lodash');
 const { flatMap } = require('lodash');
 const fs = require('fs');
 const mkdirp = require('mkdirp');
+const { stringReplace } = require('./utils');
 
 // get root project directory
 const appRootDir = _path.resolve('.').split('/node_modules')[0];
@@ -17,9 +18,6 @@ class easyApiFixtures {
       output: {
         filename: '[name].json',
         uglified: false,
-        versionInPath: true,
-        endpointInPath: true,
-        aliasInPath: true,
       },
     };
     this.config = this.parseConfig(this.constructor.loadFile(configPath));
@@ -83,6 +81,10 @@ class easyApiFixtures {
     const apiArray = flatMap([newConfig.api]);
     const apis = apiArray.map(api =>
       Object.assign({}, api, {
+        _pathMap: {
+          '[api]': sanitize(_.get(api, 'alias', _.get(api, 'url', ''))),
+          '[version]': _.get(api, 'version', ''),
+        },
         alias: sanitize(api.alias || api.url),
         fixture: flatMap([api.fixture]).map(fixture =>
           Object.assign({}, fixture, {
@@ -100,13 +102,10 @@ class easyApiFixtures {
    * @param {Object} api - An object that holds information on an api from the config file
    */
   getBasePath(api) {
-    const { output } = this.config;
-    return _path.join(
-      this.appRootDir,
-      output.path,
-      output.aliasInPath ? _.get(api, 'alias', '') : '',
-      output.versionInPath ? _.get(api, 'version', '') : ''
-    );
+    const { path } = this.config.output;
+    const pathToUse = api.path || path;
+
+    return _path.join(this.appRootDir, stringReplace(pathToUse, api._pathMap));
   }
 
   /**
@@ -130,18 +129,15 @@ class easyApiFixtures {
    * @param {String} target - the real URL to mock
    */
   request(target) {
-    const regEx = /.*:\/\/.*?(?=\/)|\[mock\]/gm;
+    const regEx = /.*:\/\/.*?(?=\/)|mock-api/gm;
     const base = target.match(regEx)[0];
     const endpoint = target.split(regEx)[1];
-    const { endpointInPath } = this.config.output;
     const pathArray = endpoint.split('/').filter(a => a);
-    const fixturePath = _path.join(
-      this.getBasePath(
-        this.config.api.filter(api => api.url.includes(base))[0]
-      ),
-      endpointInPath ? pathArray[0] : '',
-      this.getFileName(pathArray[1])
+    const basePath = this.getBasePath(
+      this.config.api.filter(api => api.url.includes(base))[0]
     );
+    const path = stringReplace(basePath, { '[endpoint]': pathArray[0] });
+    const fixturePath = _path.join(path, this.getFileName(pathArray[1]));
     return this.constructor.loadFile(fixturePath);
   }
 
@@ -165,10 +161,9 @@ class easyApiFixtures {
    * @param {Object} {fixturePath, slug, endpoint, data}
    */
   async writeFile({ fixturePath, slug, endpoint, data }) {
-    await this.constructor.ensureDirectoryExistence(
-      _path.join(fixturePath, endpoint)
-    );
-    const file = _path.join(fixturePath, endpoint, this.getFileName(slug));
+    const path = stringReplace(fixturePath, { '[endpoint]': endpoint });
+    await this.constructor.ensureDirectoryExistence(path);
+    const file = _path.join(path, this.getFileName(slug));
     fs.writeFile(file, JSON.stringify(data, null, 2), err => {
       if (err) {
         console.error(err);
