@@ -3,7 +3,7 @@
 export const getMapRegEx = mapObj =>
   new RegExp(
     Object.keys(mapObj)
-      .map(key => key.replace(/\[|\]/, match => `\\${match}`))
+      .map(key => key.replace(/\[|\]|\?/, match => `\\${match}`))
       .join('|'),
     'gi'
   );

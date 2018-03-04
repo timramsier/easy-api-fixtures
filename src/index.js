@@ -120,7 +120,14 @@ class easyApiFixtures {
    * @param {String} slug - the slug of the request
    */
   getFileName(slug) {
-    const name = this.config.output.filename.replace('[name]', slug);
+    const replaceObj = {
+      '?': '_where_',
+      '=': '_equals_',
+      '&': '_and_',
+      ' ': '_',
+    };
+    const parsedSlug = stringReplace(slug, replaceObj);
+    const name = this.config.output.filename.replace('[name]', parsedSlug);
     return name;
   }
 

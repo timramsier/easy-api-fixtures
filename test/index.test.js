@@ -20,13 +20,19 @@ describe('The EasyApiFixtures class should work correctly', () => {
       expect(easyApi.getConfig()).to.be.a('object');
       done();
     });
-
-    it('getFileName should replace the filename correctly', done => {
+  });
+  describe('getFileName should handle all cases properly', () => {
+    it('should replace the filename correctly', done => {
       expect(easyApi.getFileName('light')).to.equal('light.json');
       done();
     });
+    it('should replace ?, =, &, and spaces properly', done => {
+      expect(easyApi.getFileName('light on?limit=10&offset=5')).to.equal(
+        'light_on_where_limit_equals_10_and_offset_equals_5.json'
+      );
+      done();
+    });
   });
-
   describe('parseConfig handles config correctly', () => {
     it('should transform api.*.fixture.*.slug to array if a string', done => {
       const unparsedSlug = config.api[0].fixture[0].slug;
