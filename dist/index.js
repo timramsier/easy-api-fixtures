@@ -114,7 +114,14 @@ var easyApiFixtures = function () {
   }, {
     key: 'getFileName',
     value: function getFileName(slug) {
-      var name = this.config.output.filename.replace('[name]', slug);
+      var replaceObj = {
+        '?': '_where_',
+        '=': '_equals_',
+        '&': '_and_',
+        ' ': '_'
+      };
+      var parsedSlug = stringReplace(slug, replaceObj);
+      var name = this.config.output.filename.replace('[name]', parsedSlug);
       return name;
     }
 

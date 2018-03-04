@@ -7,7 +7,7 @@ Object.defineProperty(exports, "__esModule", {
 
 var getMapRegEx = exports.getMapRegEx = function getMapRegEx(mapObj) {
   return new RegExp(Object.keys(mapObj).map(function (key) {
-    return key.replace(/\[|\]/, function (match) {
+    return key.replace(/\[|\]|\?/, function (match) {
       return '\\' + match;
     });
   }).join('|'), 'gi');
