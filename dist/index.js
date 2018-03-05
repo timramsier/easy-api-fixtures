@@ -2,6 +2,8 @@
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _asyncToGenerator(fn) { return function () { var gen = fn.apply(this, arguments); return new Promise(function (resolve, reject) { function step(key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { return Promise.resolve(value).then(function (value) { step("next", value); }, function (err) { step("throw", err); }); } } return step("next"); }); }; }
@@ -23,7 +25,8 @@ var fs = require('fs');
 var mkdirp = require('mkdirp');
 
 var _require2 = require('./utils'),
-    stringReplace = _require2.stringReplace;
+    stringReplace = _require2.stringReplace,
+    parseUrl = _require2.parseUrl;
 
 // get root project directory
 
@@ -42,15 +45,16 @@ var easyApiFixtures = function () {
     this.appRootDir = appRootDir;
     this.feedback = feedback;
     this.defaults = {
+      requestFunction: axios.get,
       output: {
         filename: '[name].json',
         uglified: false
       }
     };
     try {
-      console.log('\nLoading config: ' + this.configPath);
+      if (this.feedback) console.log('\nLoading config: ' + this.configPath);
       this.config = this.parseConfig(this.constructor.loadFile(this.configPath));
-      console.log(clc.green('\nSuccessfully loaded configuration.'));
+      if (this.feedback) console.log(clc.green('\nSuccessfully loaded configuration.'));
     } catch (err) {
       throw err;
     }
@@ -75,7 +79,7 @@ var easyApiFixtures = function () {
       var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(api) {
         var _this = this;
 
-        var requestFn = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : axios.get;
+        var requestFn = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : this.config.requestFunction;
 
         var _getData, fixtures;
 
@@ -84,13 +88,17 @@ var easyApiFixtures = function () {
             switch (_context.prev = _context.next) {
               case 0:
                 _getData = function _getData(url, endpoint, slug) {
-                  return requestFn(url + '/' + endpoint + '/' + slug).then(function (result) {
-                    if (_this.feedback) console.log(clc.green('\t[success] '), url + '/' + endpoint + '/' + slug);
-                    _this.requests.push(url + '/' + endpoint + '/' + slug);
-                    return { slug: slug, endpoint: endpoint, data: result.data };
-                  }).catch(function () {
-                    return console.log(clc.green('\t[failed] '), url + '/' + endpoint + '/' + slug);
-                  });
+                  try {
+                    return requestFn(url + '/' + endpoint + '/' + slug).then(function (result) {
+                      if (_this.feedback) console.log(clc.green('\t[success] '), url + '/' + endpoint + '/' + slug);
+                      _this.requests.push(url + '/' + endpoint + '/' + slug);
+                      return { slug: slug, endpoint: endpoint, data: result.data };
+                    }).catch(function () {
+                      return _this.feedback && console.log(clc.red('\t[failed] '), url + '/' + endpoint + '/' + slug);
+                    });
+                  } catch (err) {
+                    console.log(clc.red(err));
+                  }
                 };
 
                 _context.next = 3;
@@ -168,6 +176,7 @@ var easyApiFixtures = function () {
     value: function parseConfig(config) {
       var newConfig = config;
       newConfig.output = Object.assign({}, this.defaults.output, config.output);
+      newConfig.requestFunction = _.get(config, 'requestFunction', axios.get);
       var apiArray = flatMap([newConfig.api]);
       var apis = apiArray.map(function (api) {
         return Object.assign({}, api, {
@@ -239,17 +248,25 @@ var easyApiFixtures = function () {
   }, {
     key: 'request',
     value: function request(target) {
-      var regEx = /.*:\/\/.*?(?=\/)|mock-api/gm;
-      var base = target.match(regEx)[0];
-      var endpoint = target.split(regEx)[1];
-      var pathArray = endpoint.split('/').filter(function (a) {
+      var _parseUrl = parseUrl(target),
+          path = _parseUrl.path,
+          base = _parseUrl.base;
+
+      console.log(base);
+
+      var _path$split$filter = path.split('/').filter(function (a) {
         return a;
-      });
+      }),
+          _path$split$filter2 = _slicedToArray(_path$split$filter, 2),
+          endpoint = _path$split$filter2[0],
+          filename = _path$split$filter2[1];
+
+      console.log({ endpoint: endpoint, filename: filename });
       var basePath = this.getBasePath(this.config.api.filter(function (api) {
         return api.url.includes(base);
       })[0]);
-      var path = stringReplace(basePath, { '[endpoint]': pathArray[0] });
-      var fixturePath = _path.join(path, this.getFileName(pathArray[1]));
+      var updatedPath = stringReplace(basePath, { '[endpoint]': endpoint });
+      var fixturePath = _path.join(updatedPath, this.getFileName(filename));
       return this.constructor.loadFile(fixturePath);
     }
 
@@ -276,23 +293,29 @@ var easyApiFixtures = function () {
                         switch (_context3.prev = _context3.next) {
                           case 0:
                             fixturePath = _this2.getBasePath(api);
+                            _context3.prev = 1;
                             _context3.t0 = fixturePath;
-                            _context3.next = 4;
+                            _context3.next = 5;
                             return _this2.getFixturesDataFromApi(api);
 
-                          case 4:
+                          case 5:
                             _context3.t1 = _context3.sent;
                             return _context3.abrupt('return', {
                               fixturePath: _context3.t0,
                               fixtures: _context3.t1
                             });
 
-                          case 6:
+                          case 9:
+                            _context3.prev = 9;
+                            _context3.t2 = _context3['catch'](1);
+                            throw _context3.t2;
+
+                          case 12:
                           case 'end':
                             return _context3.stop();
                         }
                       }
-                    }, _callee3, _this2);
+                    }, _callee3, _this2, [[1, 9]]);
                   }));
 
                   return function (_x5) {
@@ -338,14 +361,19 @@ var easyApiFixtures = function () {
           while (1) {
             switch (_context6.prev = _context6.next) {
               case 0:
+                if (!(data && slug && endpoint && fixturePath)) {
+                  _context6.next = 8;
+                  break;
+                }
+
                 path = stringReplace(fixturePath, { '[endpoint]': endpoint });
-                _context6.next = 3;
+                _context6.next = 4;
                 return this.ensureDirectoryExistence(path);
 
-              case 3:
+              case 4:
                 filename = this.getFileName(slug);
                 file = _path.join(path, filename);
-                _context6.next = 7;
+                _context6.next = 8;
                 return fs.writeFile(file, JSON.stringify(data, null, 2), function () {
                   var _ref7 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee5(err) {
                     return regeneratorRuntime.wrap(function _callee5$(_context5) {
@@ -380,7 +408,7 @@ var easyApiFixtures = function () {
                   };
                 }());
 
-              case 7:
+              case 8:
               case 'end':
                 return _context6.stop();
             }
@@ -409,7 +437,7 @@ var easyApiFixtures = function () {
           while (1) {
             switch (_context9.prev = _context9.next) {
               case 0:
-                console.log('\nRetrieving data from APIs...', clc.bgWhite.black('\n\n\t STATUS        REQUEST        '));
+                if (this.feedback) console.log('\nRetrieving data from APIs...', clc.bgWhite.black('\n\n\t STATUS        REQUEST        '));
                 _context9.prev = 1;
                 _context9.next = 4;
                 return this.loadData();

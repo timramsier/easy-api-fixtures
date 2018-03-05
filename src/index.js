@@ -8,10 +8,11 @@ const _ = require('lodash');
 const { flatMap } = require('lodash');
 const fs = require('fs');
 const mkdirp = require('mkdirp');
-const { stringReplace } = require('./utils');
+const { stringReplace, parseUrl } = require('./utils');
 
 // get root project directory
 const appRootDir = _path.resolve('.').split('/node_modules')[0];
+
 class easyApiFixtures {
   constructor(configPath, feedback = false) {
     this.requests = [];
@@ -21,17 +22,19 @@ class easyApiFixtures {
     this.appRootDir = appRootDir;
     this.feedback = feedback;
     this.defaults = {
+      requestFunction: axios.get,
       output: {
         filename: '[name].json',
         uglified: false,
       },
     };
     try {
-      console.log(`\nLoading config: ${this.configPath}`);
+      if (this.feedback) console.log(`\nLoading config: ${this.configPath}`);
       this.config = this.parseConfig(
         this.constructor.loadFile(this.configPath)
       );
-      console.log(clc.green('\nSuccessfully loaded configuration.'));
+      if (this.feedback)
+        console.log(clc.green('\nSuccessfully loaded configuration.'));
     } catch (err) {
       throw err;
     }
@@ -55,21 +58,29 @@ class easyApiFixtures {
    * @param {Object} api - An object that holds information on an api from the config file
    * @param {Function} requestFn - (default axios) the promise based http request function
    */
-  async getFixturesDataFromApi(api, requestFn = axios.get) {
-    const _getData = (url, endpoint, slug) =>
-      requestFn(`${url}/${endpoint}/${slug}`)
-        .then(result => {
-          if (this.feedback)
-            console.log(
-              clc.green('\t[success] '),
-              `${url}/${endpoint}/${slug}`
-            );
-          this.requests.push(`${url}/${endpoint}/${slug}`);
-          return { slug, endpoint, data: result.data };
-        })
-        .catch(() =>
-          console.log(clc.green('\t[failed] '), `${url}/${endpoint}/${slug}`)
-        );
+  async getFixturesDataFromApi(api, requestFn = this.config.requestFunction) {
+    const _getData = (url, endpoint, slug) => {
+      try {
+        return requestFn(`${url}/${endpoint}/${slug}`)
+          .then(result => {
+            if (this.feedback)
+              console.log(
+                clc.green('\t[success] '),
+                `${url}/${endpoint}/${slug}`
+              );
+            this.requests.push(`${url}/${endpoint}/${slug}`);
+            return { slug, endpoint, data: result.data };
+          })
+          .catch(
+            () =>
+              this.feedback &&
+              console.log(clc.red('\t[failed] '), `${url}/${endpoint}/${slug}`)
+          );
+      } catch (err) {
+        console.log(clc.red(err));
+      }
+    };
+
     const fixtures = await Promise.all(
       _.flatMap(api.fixture, fixture => {
         const { url } = api;
@@ -100,6 +111,7 @@ class easyApiFixtures {
   parseConfig(config) {
     const newConfig = config;
     newConfig.output = Object.assign({}, this.defaults.output, config.output);
+    newConfig.requestFunction = _.get(config, 'requestFunction', axios.get);
     const apiArray = flatMap([newConfig.api]);
     const apis = apiArray.map(api =>
       Object.assign({}, api, {
@@ -158,15 +170,15 @@ class easyApiFixtures {
    * @param {String} target - the real URL to mock
    */
   request(target) {
-    const regEx = /.*:\/\/.*?(?=\/)|mock-api/gm;
-    const base = target.match(regEx)[0];
-    const endpoint = target.split(regEx)[1];
-    const pathArray = endpoint.split('/').filter(a => a);
+    const { path, base } = parseUrl(target);
+    console.log(base);
+    const [endpoint, filename] = path.split('/').filter(a => a);
+    console.log({ endpoint, filename });
     const basePath = this.getBasePath(
       this.config.api.filter(api => api.url.includes(base))[0]
     );
-    const path = stringReplace(basePath, { '[endpoint]': pathArray[0] });
-    const fixturePath = _path.join(path, this.getFileName(pathArray[1]));
+    const updatedPath = stringReplace(basePath, { '[endpoint]': endpoint });
+    const fixturePath = _path.join(updatedPath, this.getFileName(filename));
     return this.constructor.loadFile(fixturePath);
   }
 
@@ -177,10 +189,14 @@ class easyApiFixtures {
     this.fixtureData = await Promise.all(
       this.config.api.map(async api => {
         const fixturePath = this.getBasePath(api);
-        return {
-          fixturePath,
-          fixtures: await this.getFixturesDataFromApi(api),
-        };
+        try {
+          return {
+            fixturePath,
+            fixtures: await this.getFixturesDataFromApi(api),
+          };
+        } catch (err) {
+          throw err;
+        }
       })
     );
   }
@@ -190,28 +206,31 @@ class easyApiFixtures {
    * @param {Object} {fixturePath, slug, endpoint, data}
    */
   async writeFile({ fixturePath, slug, endpoint, data }) {
-    const path = stringReplace(fixturePath, { '[endpoint]': endpoint });
-    await this.ensureDirectoryExistence(path);
-    const filename = this.getFileName(slug);
-    const file = _path.join(path, filename);
-    await fs.writeFile(file, JSON.stringify(data, null, 2), async err => {
-      if (err) {
-        console.error(clc.red('\t[failed] '), filename);
-        return;
-      }
-      await this.emittedFiles.push(filename);
-      console.log(clc.green('\t[success] '), filename);
-    });
+    if (data && slug && endpoint && fixturePath) {
+      const path = stringReplace(fixturePath, { '[endpoint]': endpoint });
+      await this.ensureDirectoryExistence(path);
+      const filename = this.getFileName(slug);
+      const file = _path.join(path, filename);
+      await fs.writeFile(file, JSON.stringify(data, null, 2), async err => {
+        if (err) {
+          console.error(clc.red('\t[failed] '), filename);
+          return;
+        }
+        await this.emittedFiles.push(filename);
+        console.log(clc.green('\t[success] '), filename);
+      });
+    }
   }
 
   /**
    * Runs the application to create fixtures
    */
   async run() {
-    console.log(
-      '\nRetrieving data from APIs...',
-      clc.bgWhite.black('\n\n\t STATUS        REQUEST        ')
-    );
+    if (this.feedback)
+      console.log(
+        '\nRetrieving data from APIs...',
+        clc.bgWhite.black('\n\n\t STATUS        REQUEST        ')
+      );
     try {
       await this.loadData();
     } catch (err) {
