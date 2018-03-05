@@ -10,6 +10,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 require('babel-polyfill');
 
+var clc = require('cli-color');
 var _path = require('path');
 var axios = require('axios');
 var sanitize = require('sanitize-filename');
@@ -30,19 +31,29 @@ var _require2 = require('./utils'),
 var appRootDir = _path.resolve('.').split('/node_modules')[0];
 
 var easyApiFixtures = function () {
-  function easyApiFixtures() {
-    var configPath = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : _path.join(appRootDir, 'fixtures.config.js');
+  function easyApiFixtures(configPath) {
+    var feedback = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
 
     _classCallCheck(this, easyApiFixtures);
 
+    this.requests = [];
+    this.emittedFiles = [];
+    this.configPath = configPath || _path.join(appRootDir, 'fixtures.config.js');
     this.appRootDir = appRootDir;
+    this.feedback = feedback;
     this.defaults = {
       output: {
         filename: '[name].json',
         uglified: false
       }
     };
-    this.config = this.parseConfig(this.constructor.loadFile(configPath));
+    try {
+      console.log('\nLoading config: ' + this.configPath);
+      this.config = this.parseConfig(this.constructor.loadFile(this.configPath));
+      console.log(clc.green('\nSuccessfully loaded configuration.'));
+    } catch (err) {
+      throw err;
+    }
   }
 
   /**
@@ -52,13 +63,108 @@ var easyApiFixtures = function () {
 
 
   _createClass(easyApiFixtures, [{
-    key: 'parseConfig',
+    key: 'getFixturesDataFromApi',
 
+
+    /**
+     * Retrieves information from an external API
+     * @param {Object} api - An object that holds information on an api from the config file
+     * @param {Function} requestFn - (default axios) the promise based http request function
+     */
+    value: function () {
+      var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(api) {
+        var _this = this;
+
+        var requestFn = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : axios.get;
+
+        var _getData, fixtures;
+
+        return regeneratorRuntime.wrap(function _callee$(_context) {
+          while (1) {
+            switch (_context.prev = _context.next) {
+              case 0:
+                _getData = function _getData(url, endpoint, slug) {
+                  return requestFn(url + '/' + endpoint + '/' + slug).then(function (result) {
+                    if (_this.feedback) console.log(clc.green('\t[success] '), url + '/' + endpoint + '/' + slug);
+                    _this.requests.push(url + '/' + endpoint + '/' + slug);
+                    return { slug: slug, endpoint: endpoint, data: result.data };
+                  }).catch(function () {
+                    return console.log(clc.green('\t[failed] '), url + '/' + endpoint + '/' + slug);
+                  });
+                };
+
+                _context.next = 3;
+                return Promise.all(_.flatMap(api.fixture, function (fixture) {
+                  var url = api.url;
+
+                  return _.flatMap(fixture.endpoint, function (endpoint) {
+                    return _.map(fixture.slug, function (slug) {
+                      return _getData(url, endpoint, slug);
+                    });
+                  });
+                })).catch(function (err) {
+                  return console.log(clc.red(err));
+                });
+
+              case 3:
+                fixtures = _context.sent;
+                return _context.abrupt('return', fixtures);
+
+              case 5:
+              case 'end':
+                return _context.stop();
+            }
+          }
+        }, _callee, this);
+      }));
+
+      function getFixturesDataFromApi(_x2) {
+        return _ref.apply(this, arguments);
+      }
+
+      return getFixturesDataFromApi;
+    }()
+
+    /**
+     * Tests for directory's existence and creates it if it does not
+     * @param {String} filePath - path to directory
+     */
+
+  }, {
+    key: 'ensureDirectoryExistence',
+    value: function () {
+      var _ref2 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(filePath) {
+        return regeneratorRuntime.wrap(function _callee2$(_context2) {
+          while (1) {
+            switch (_context2.prev = _context2.next) {
+              case 0:
+                if (!fs.existsSync(filePath)) {
+                  if (this.feedback) console.log(clc.yellow(filePath + ' did not exist...creating it.'));
+                  mkdirp.sync(filePath);
+                }
+
+              case 1:
+              case 'end':
+                return _context2.stop();
+            }
+          }
+        }, _callee2, this);
+      }));
+
+      function ensureDirectoryExistence(_x4) {
+        return _ref2.apply(this, arguments);
+      }
+
+      return ensureDirectoryExistence;
+    }()
 
     /**
      * Parses a config object to be used by the application
      * @param {Object} config - the configuration object
      */
+
+  }, {
+    key: 'parseConfig',
     value: function parseConfig(config) {
       var newConfig = config;
       newConfig.output = Object.assign({}, this.defaults.output, config.output);
@@ -154,59 +260,59 @@ var easyApiFixtures = function () {
   }, {
     key: 'loadData',
     value: function () {
-      var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2() {
-        var _this = this;
+      var _ref3 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4() {
+        var _this2 = this;
 
-        return regeneratorRuntime.wrap(function _callee2$(_context2) {
+        return regeneratorRuntime.wrap(function _callee4$(_context4) {
           while (1) {
-            switch (_context2.prev = _context2.next) {
+            switch (_context4.prev = _context4.next) {
               case 0:
-                _context2.next = 2;
+                _context4.next = 2;
                 return Promise.all(this.config.api.map(function () {
-                  var _ref2 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(api) {
+                  var _ref4 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3(api) {
                     var fixturePath;
-                    return regeneratorRuntime.wrap(function _callee$(_context) {
+                    return regeneratorRuntime.wrap(function _callee3$(_context3) {
                       while (1) {
-                        switch (_context.prev = _context.next) {
+                        switch (_context3.prev = _context3.next) {
                           case 0:
-                            fixturePath = _this.getBasePath(api);
-                            _context.t0 = fixturePath;
-                            _context.next = 4;
-                            return _this.constructor.getFixturesDataFromApi(api);
+                            fixturePath = _this2.getBasePath(api);
+                            _context3.t0 = fixturePath;
+                            _context3.next = 4;
+                            return _this2.getFixturesDataFromApi(api);
 
                           case 4:
-                            _context.t1 = _context.sent;
-                            return _context.abrupt('return', {
-                              fixturePath: _context.t0,
-                              fixtures: _context.t1
+                            _context3.t1 = _context3.sent;
+                            return _context3.abrupt('return', {
+                              fixturePath: _context3.t0,
+                              fixtures: _context3.t1
                             });
 
                           case 6:
                           case 'end':
-                            return _context.stop();
+                            return _context3.stop();
                         }
                       }
-                    }, _callee, _this);
+                    }, _callee3, _this2);
                   }));
 
-                  return function (_x2) {
-                    return _ref2.apply(this, arguments);
+                  return function (_x5) {
+                    return _ref4.apply(this, arguments);
                   };
                 }()));
 
               case 2:
-                this.fixtureData = _context2.sent;
+                this.fixtureData = _context4.sent;
 
               case 3:
               case 'end':
-                return _context2.stop();
+                return _context4.stop();
             }
           }
-        }, _callee2, this);
+        }, _callee4, this);
       }));
 
       function loadData() {
-        return _ref.apply(this, arguments);
+        return _ref3.apply(this, arguments);
       }
 
       return loadData;
@@ -220,41 +326,70 @@ var easyApiFixtures = function () {
   }, {
     key: 'writeFile',
     value: function () {
-      var _ref3 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3(_ref4) {
-        var fixturePath = _ref4.fixturePath,
-            slug = _ref4.slug,
-            endpoint = _ref4.endpoint,
-            data = _ref4.data;
-        var path, file;
-        return regeneratorRuntime.wrap(function _callee3$(_context3) {
+      var _ref5 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee6(_ref6) {
+        var _this3 = this;
+
+        var fixturePath = _ref6.fixturePath,
+            slug = _ref6.slug,
+            endpoint = _ref6.endpoint,
+            data = _ref6.data;
+        var path, filename, file;
+        return regeneratorRuntime.wrap(function _callee6$(_context6) {
           while (1) {
-            switch (_context3.prev = _context3.next) {
+            switch (_context6.prev = _context6.next) {
               case 0:
                 path = stringReplace(fixturePath, { '[endpoint]': endpoint });
-                _context3.next = 3;
-                return this.constructor.ensureDirectoryExistence(path);
+                _context6.next = 3;
+                return this.ensureDirectoryExistence(path);
 
               case 3:
-                file = _path.join(path, this.getFileName(slug));
+                filename = this.getFileName(slug);
+                file = _path.join(path, filename);
+                _context6.next = 7;
+                return fs.writeFile(file, JSON.stringify(data, null, 2), function () {
+                  var _ref7 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee5(err) {
+                    return regeneratorRuntime.wrap(function _callee5$(_context5) {
+                      while (1) {
+                        switch (_context5.prev = _context5.next) {
+                          case 0:
+                            if (!err) {
+                              _context5.next = 3;
+                              break;
+                            }
 
-                fs.writeFile(file, JSON.stringify(data, null, 2), function (err) {
-                  if (err) {
-                    console.error(err);
-                    return;
-                  }
-                  console.log('\x1b[32m', file, 'has been created', '\x1b[0m');
-                });
+                            console.error(clc.red('\t[failed] '), filename);
+                            return _context5.abrupt('return');
 
-              case 5:
+                          case 3:
+                            _context5.next = 5;
+                            return _this3.emittedFiles.push(filename);
+
+                          case 5:
+                            console.log(clc.green('\t[success] '), filename);
+
+                          case 6:
+                          case 'end':
+                            return _context5.stop();
+                        }
+                      }
+                    }, _callee5, _this3);
+                  }));
+
+                  return function (_x7) {
+                    return _ref7.apply(this, arguments);
+                  };
+                }());
+
+              case 7:
               case 'end':
-                return _context3.stop();
+                return _context6.stop();
             }
           }
-        }, _callee3, this);
+        }, _callee6, this);
       }));
 
-      function writeFile(_x3) {
-        return _ref3.apply(this, arguments);
+      function writeFile(_x6) {
+        return _ref5.apply(this, arguments);
       }
 
       return writeFile;
@@ -267,35 +402,84 @@ var easyApiFixtures = function () {
   }, {
     key: 'run',
     value: function () {
-      var _ref5 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4() {
-        var _this2 = this;
+      var _ref8 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee9() {
+        var _this4 = this;
 
-        return regeneratorRuntime.wrap(function _callee4$(_context4) {
+        return regeneratorRuntime.wrap(function _callee9$(_context9) {
           while (1) {
-            switch (_context4.prev = _context4.next) {
+            switch (_context9.prev = _context9.next) {
               case 0:
-                _context4.next = 2;
+                console.log('\nRetrieving data from APIs...', clc.bgWhite.black('\n\n\t STATUS        REQUEST        '));
+                _context9.prev = 1;
+                _context9.next = 4;
                 return this.loadData();
 
-              case 2:
-                this.fixtureData.forEach(function (data) {
-                  var fixturePath = data.fixturePath;
+              case 4:
+                _context9.next = 9;
+                break;
 
-                  data.fixtures.forEach(function (fixture) {
-                    _this2.writeFile(_extends({ fixturePath: fixturePath }, fixture));
-                  });
-                });
+              case 6:
+                _context9.prev = 6;
+                _context9.t0 = _context9['catch'](1);
+                throw _context9.t0;
 
-              case 3:
+              case 9:
+                if (this.feedback) console.log('\nWriting API data to files...', clc.bgWhite.black('\n\n\t STATUS        OUTPUT        '));
+                _context9.next = 12;
+                return this.fixtureData.forEach(function () {
+                  var _ref9 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee8(data) {
+                    var fixturePath;
+                    return regeneratorRuntime.wrap(function _callee8$(_context8) {
+                      while (1) {
+                        switch (_context8.prev = _context8.next) {
+                          case 0:
+                            fixturePath = data.fixturePath;
+                            _context8.next = 3;
+                            return data.fixtures.forEach(function () {
+                              var _ref10 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee7(fixture) {
+                                return regeneratorRuntime.wrap(function _callee7$(_context7) {
+                                  while (1) {
+                                    switch (_context7.prev = _context7.next) {
+                                      case 0:
+                                        _context7.next = 2;
+                                        return _this4.writeFile(_extends({ fixturePath: fixturePath }, fixture));
+
+                                      case 2:
+                                      case 'end':
+                                        return _context7.stop();
+                                    }
+                                  }
+                                }, _callee7, _this4);
+                              }));
+
+                              return function (_x9) {
+                                return _ref10.apply(this, arguments);
+                              };
+                            }());
+
+                          case 3:
+                          case 'end':
+                            return _context8.stop();
+                        }
+                      }
+                    }, _callee8, _this4);
+                  }));
+
+                  return function (_x8) {
+                    return _ref9.apply(this, arguments);
+                  };
+                }());
+
+              case 12:
               case 'end':
-                return _context4.stop();
+                return _context9.stop();
             }
           }
-        }, _callee4, this);
+        }, _callee9, this, [[1, 6]]);
       }));
 
       function run() {
-        return _ref5.apply(this, arguments);
+        return _ref8.apply(this, arguments);
       }
 
       return run;
@@ -310,98 +494,6 @@ var easyApiFixtures = function () {
         throw err;
       }
     }
-
-    /**
-     * Retrieves information from an external API
-     * @param {Object} api - An object that holds information on an api from the config file
-     * @param {Function} requestFn - (default axios) the promise based http request function
-     */
-
-  }, {
-    key: 'getFixturesDataFromApi',
-    value: function () {
-      var _ref6 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee5(api) {
-        var requestFn = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : axios.get;
-
-        var _getData, fixtures;
-
-        return regeneratorRuntime.wrap(function _callee5$(_context5) {
-          while (1) {
-            switch (_context5.prev = _context5.next) {
-              case 0:
-                _getData = function _getData(url, endpoint, slug) {
-                  return requestFn(url + '/' + endpoint + '/' + slug).then(function (result) {
-                    return {
-                      slug: slug,
-                      endpoint: endpoint,
-                      data: result.data
-                    };
-                  }).catch(function (err) {
-                    return console.log(err);
-                  });
-                };
-
-                _context5.next = 3;
-                return Promise.all(_.flatMap(api.fixture, function (fixture) {
-                  var url = api.url;
-
-                  return _.flatMap(fixture.endpoint, function (endpoint) {
-                    return _.map(fixture.slug, function (slug) {
-                      return _getData(url, endpoint, slug);
-                    });
-                  });
-                }));
-
-              case 3:
-                fixtures = _context5.sent;
-                return _context5.abrupt('return', fixtures);
-
-              case 5:
-              case 'end':
-                return _context5.stop();
-            }
-          }
-        }, _callee5, this);
-      }));
-
-      function getFixturesDataFromApi(_x4) {
-        return _ref6.apply(this, arguments);
-      }
-
-      return getFixturesDataFromApi;
-    }()
-
-    /**
-     * Tests for directory's existence and creates it if it does not
-     * @param {String} filePath - path to directory
-     */
-
-  }, {
-    key: 'ensureDirectoryExistence',
-    value: function () {
-      var _ref7 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee6(filePath) {
-        return regeneratorRuntime.wrap(function _callee6$(_context6) {
-          while (1) {
-            switch (_context6.prev = _context6.next) {
-              case 0:
-                if (!fs.existsSync(filePath)) {
-                  mkdirp.sync(filePath);
-                }
-
-              case 1:
-              case 'end':
-                return _context6.stop();
-            }
-          }
-        }, _callee6, this);
-      }));
-
-      function ensureDirectoryExistence(_x6) {
-        return _ref7.apply(this, arguments);
-      }
-
-      return ensureDirectoryExistence;
-    }()
   }]);
 
   return easyApiFixtures;
