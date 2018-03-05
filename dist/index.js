@@ -1,1 +1,530 @@
-'use strict';var _extends=Object.assign||function(a){for(var b,c=1;c<arguments.length;c++)for(var d in b=arguments[c],b)Object.prototype.hasOwnProperty.call(b,d)&&(a[d]=b[d]);return a},_createClass=function(){function a(a,b){for(var c,d=0;d<b.length;d++)c=b[d],c.enumerable=c.enumerable||!1,c.configurable=!0,'value'in c&&(c.writable=!0),Object.defineProperty(a,c.key,c)}return function(b,c,d){return c&&a(b.prototype,c),d&&a(b,d),b}}();function _asyncToGenerator(a){return function(){var b=a.apply(this,arguments);return new Promise(function(a,c){function d(e,f){try{var g=b[e](f),h=g.value}catch(a){return void c(a)}return g.done?void a(h):Promise.resolve(h).then(function(a){d('next',a)},function(a){d('throw',a)})}return d('next')})}}function _classCallCheck(a,b){if(!(a instanceof b))throw new TypeError('Cannot call a class as a function')}require('babel-polyfill');var _path=require('path'),axios=require('axios'),sanitize=require('sanitize-filename'),_=require('lodash'),_require=require('lodash'),flatMap=_require.flatMap,fs=require('fs'),mkdirp=require('mkdirp'),appRootDir=_path.resolve('.').split('/node_modules')[0],easyApiFixtures=function(){function a(){var b=0<arguments.length&&void 0!==arguments[0]?arguments[0]:_path.join(appRootDir,'fixtures.config.js');_classCallCheck(this,a),this.appRootDir=appRootDir,this.defaults={output:{filename:'[name].json',uglified:!1,versionInPath:!0,endpointInPath:!0,aliasInPath:!0}},this.config=this.parseConfig(this.constructor.loadFile(b))}return _createClass(a,[{key:'parseConfig',value:function parseConfig(a){var b=a;b.output=Object.assign({},this.defaults.output,a.output);var c=flatMap([b.api]),d=c.map(function(a){return Object.assign({},a,{alias:sanitize(a.alias||a.url),fixture:flatMap([a.fixture]).map(function(a){return Object.assign({},a,{slug:flatMap([a.slug]),endpoint:flatMap([a.endpoint])})})})});return Object.assign({},b,{api:d})}},{key:'getBasePath',value:function getBasePath(a){var b=this.config.output;return _path.join(this.appRootDir,b.path,b.aliasInPath?_.get(a,'alias',''):'',b.versionInPath?_.get(a,'version',''):'')}},{key:'getConfig',value:function getConfig(){return this.config}},{key:'getFileName',value:function getFileName(a){var b=this.config.output.filename.replace('[name]',a);return b}},{key:'request',value:function request(a){var b=/.*:\/\/.*?(?=\/)|\[mock\]/gm,c=a.match(b)[0],d=a.split(b)[1],e=this.config.output.endpointInPath,f=d.split('/').filter(function(b){return b}),g=_path.join(this.getBasePath(this.config.api.filter(function(a){return a.url.includes(c)})[0]),e?f[0]:'',this.getFileName(f[1]));return this.constructor.loadFile(g)}},{key:'loadData',value:function(){var a=_asyncToGenerator(regeneratorRuntime.mark(function a(){var b=this;return regeneratorRuntime.wrap(function(a){for(;;)switch(a.prev=a.next){case 0:return a.next=2,Promise.all(this.config.api.map(function(){var a=_asyncToGenerator(regeneratorRuntime.mark(function a(c){var d;return regeneratorRuntime.wrap(function(a){for(;;)switch(a.prev=a.next){case 0:return d=b.getBasePath(c),a.t0=d,a.next=4,b.constructor.getFixturesDataFromApi(c);case 4:return a.t1=a.sent,a.abrupt('return',{fixturePath:a.t0,fixtures:a.t1});case 6:case'end':return a.stop();}},a,b)}));return function(){return a.apply(this,arguments)}}()));case 2:this.fixtureData=a.sent;case 3:case'end':return a.stop();}},a,this)}));return function loadData(){return a.apply(this,arguments)}}()},{key:'writeFile',value:function(){var a=_asyncToGenerator(regeneratorRuntime.mark(function a(b){var c,d=b.fixturePath,e=b.slug,f=b.endpoint,g=b.data;return regeneratorRuntime.wrap(function(a){for(;;)switch(a.prev=a.next){case 0:return a.next=2,this.constructor.ensureDirectoryExistence(_path.join(d,f));case 2:c=_path.join(d,f,this.getFileName(e)),fs.writeFile(c,JSON.stringify(g,null,2),function(a){return a?void console.error(a):void console.log('\x1B[32m',c,'has been created','\x1B[0m')});case 4:case'end':return a.stop();}},a,this)}));return function writeFile(){return a.apply(this,arguments)}}()},{key:'run',value:function(){var a=_asyncToGenerator(regeneratorRuntime.mark(function a(){var b=this;return regeneratorRuntime.wrap(function(a){for(;;)switch(a.prev=a.next){case 0:return a.next=2,this.loadData();case 2:this.fixtureData.forEach(function(a){var c=a.fixturePath;a.fixtures.forEach(function(a){b.writeFile(_extends({fixturePath:c},a))})});case 3:case'end':return a.stop();}},a,this)}));return function run(){return a.apply(this,arguments)}}()}],[{key:'loadFile',value:function loadFile(a){try{var b=require(a);return b}catch(a){throw a}}},{key:'getFixturesDataFromApi',value:function(){var a=_asyncToGenerator(regeneratorRuntime.mark(function a(b){var c,d,e=1<arguments.length&&void 0!==arguments[1]?arguments[1]:axios.get;return regeneratorRuntime.wrap(function(a){for(;;)switch(a.prev=a.next){case 0:return c=function(a,b,c){return e(a+'/'+b+'/'+c).then(function(a){return{slug:c,endpoint:b,data:a.data}}).catch(function(a){return console.log(a)})},a.next=3,Promise.all(_.flatMap(b.fixture,function(a){var d=b.url;return _.flatMap(a.endpoint,function(b){return _.map(a.slug,function(a){return c(d,b,a)})})}));case 3:return d=a.sent,a.abrupt('return',d);case 5:case'end':return a.stop();}},a,this)}));return function getFixturesDataFromApi(){return a.apply(this,arguments)}}()},{key:'ensureDirectoryExistence',value:function(){var a=_asyncToGenerator(regeneratorRuntime.mark(function a(b){return regeneratorRuntime.wrap(function(a){for(;;)switch(a.prev=a.next){case 0:fs.existsSync(b)||mkdirp.sync(b);case 1:case'end':return a.stop();}},a,this)}));return function ensureDirectoryExistence(){return a.apply(this,arguments)}}()}]),a}();module.exports=easyApiFixtures;
+'use strict';
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _asyncToGenerator(fn) { return function () { var gen = fn.apply(this, arguments); return new Promise(function (resolve, reject) { function step(key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { return Promise.resolve(value).then(function (value) { step("next", value); }, function (err) { step("throw", err); }); } } return step("next"); }); }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+require('babel-polyfill');
+
+var clc = require('cli-color');
+var _path = require('path');
+var axios = require('axios');
+var sanitize = require('sanitize-filename');
+var _ = require('lodash');
+
+var _require = require('lodash'),
+    flatMap = _require.flatMap;
+
+var fs = require('fs');
+var mkdirp = require('mkdirp');
+
+var _require2 = require('./utils'),
+    stringReplace = _require2.stringReplace,
+    parseUrl = _require2.parseUrl;
+
+// get root project directory
+
+
+var appRootDir = _path.resolve('.').split('/node_modules')[0];
+
+var easyApiFixtures = function () {
+  function easyApiFixtures(configPath) {
+    var feedback = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+
+    _classCallCheck(this, easyApiFixtures);
+
+    this.requests = [];
+    this.emittedFiles = [];
+    this.configPath = configPath || _path.join(appRootDir, 'fixtures.config.js');
+    this.appRootDir = appRootDir;
+    this.feedback = feedback;
+    this.defaults = {
+      requestFunction: axios.get,
+      output: {
+        filename: '[name].json',
+        uglified: false
+      }
+    };
+    try {
+      if (this.feedback) console.log('\nLoading config: ' + this.configPath);
+      this.config = this.parseConfig(this.constructor.loadFile(this.configPath));
+      if (this.feedback) console.log(clc.green('\nSuccessfully loaded configuration.'));
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  /**
+   * Loads file dynamicaly
+   * @param {String} path - relative path to a file
+   */
+
+
+  _createClass(easyApiFixtures, [{
+    key: 'getFixturesDataFromApi',
+
+
+    /**
+     * Retrieves information from an external API
+     * @param {Object} api - An object that holds information on an api from the config file
+     * @param {Function} requestFn - (default axios) the promise based http request function
+     */
+    value: function () {
+      var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(api) {
+        var _this = this;
+
+        var requestFn = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : this.config.requestFunction;
+
+        var _getData, fixtures;
+
+        return regeneratorRuntime.wrap(function _callee$(_context) {
+          while (1) {
+            switch (_context.prev = _context.next) {
+              case 0:
+                _getData = function _getData(url, endpoint, slug) {
+                  try {
+                    return requestFn(url + '/' + endpoint + '/' + slug).then(function (result) {
+                      if (_this.feedback) console.log(clc.green('\t[success] '), url + '/' + endpoint + '/' + slug);
+                      _this.requests.push(url + '/' + endpoint + '/' + slug);
+                      return { slug: slug, endpoint: endpoint, data: result.data };
+                    }).catch(function () {
+                      return _this.feedback && console.log(clc.red('\t[failed] '), url + '/' + endpoint + '/' + slug);
+                    });
+                  } catch (err) {
+                    console.log(clc.red(err));
+                  }
+                };
+
+                _context.next = 3;
+                return Promise.all(_.flatMap(api.fixture, function (fixture) {
+                  var url = api.url;
+
+                  return _.flatMap(fixture.endpoint, function (endpoint) {
+                    return _.map(fixture.slug, function (slug) {
+                      return _getData(url, endpoint, slug);
+                    });
+                  });
+                })).catch(function (err) {
+                  return console.log(clc.red(err));
+                });
+
+              case 3:
+                fixtures = _context.sent;
+                return _context.abrupt('return', fixtures);
+
+              case 5:
+              case 'end':
+                return _context.stop();
+            }
+          }
+        }, _callee, this);
+      }));
+
+      function getFixturesDataFromApi(_x2) {
+        return _ref.apply(this, arguments);
+      }
+
+      return getFixturesDataFromApi;
+    }()
+
+    /**
+     * Tests for directory's existence and creates it if it does not
+     * @param {String} filePath - path to directory
+     */
+
+  }, {
+    key: 'ensureDirectoryExistence',
+    value: function () {
+      var _ref2 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(filePath) {
+        return regeneratorRuntime.wrap(function _callee2$(_context2) {
+          while (1) {
+            switch (_context2.prev = _context2.next) {
+              case 0:
+                if (!fs.existsSync(filePath)) {
+                  if (this.feedback) console.log(clc.yellow(filePath + ' did not exist...creating it.'));
+                  mkdirp.sync(filePath);
+                }
+
+              case 1:
+              case 'end':
+                return _context2.stop();
+            }
+          }
+        }, _callee2, this);
+      }));
+
+      function ensureDirectoryExistence(_x4) {
+        return _ref2.apply(this, arguments);
+      }
+
+      return ensureDirectoryExistence;
+    }()
+
+    /**
+     * Parses a config object to be used by the application
+     * @param {Object} config - the configuration object
+     */
+
+  }, {
+    key: 'parseConfig',
+    value: function parseConfig(config) {
+      var newConfig = config;
+      newConfig.output = Object.assign({}, this.defaults.output, config.output);
+      newConfig.requestFunction = _.get(config, 'requestFunction', axios.get);
+      var apiArray = flatMap([newConfig.api]);
+      var apis = apiArray.map(function (api) {
+        return Object.assign({}, api, {
+          _pathMap: {
+            '[api]': sanitize(_.get(api, 'alias', _.get(api, 'url', ''))),
+            '[version]': _.get(api, 'version', '')
+          },
+          alias: sanitize(api.alias || api.url),
+          fixture: flatMap([api.fixture]).map(function (fixture) {
+            return Object.assign({}, fixture, {
+              slug: flatMap([fixture.slug]),
+              endpoint: flatMap([fixture.endpoint])
+            });
+          })
+        });
+      });
+      return Object.assign({}, newConfig, { api: apis });
+    }
+
+    /**
+     * Returns the base path based on the api provided
+     * @param {Object} api - An object that holds information on an api from the config file
+     */
+
+  }, {
+    key: 'getBasePath',
+    value: function getBasePath(api) {
+      var path = this.config.output.path;
+
+      var pathToUse = api.path || path;
+
+      return _path.join(this.appRootDir, stringReplace(pathToUse, api._pathMap));
+    }
+
+    /**
+     * Returns the configuration
+     */
+
+  }, {
+    key: 'getConfig',
+    value: function getConfig() {
+      return this.config;
+    }
+
+    /**
+     * Returns the filename based on slug provided and configuration
+     * @param {String} slug - the slug of the request
+     */
+
+  }, {
+    key: 'getFileName',
+    value: function getFileName(slug) {
+      var replaceObj = {
+        '?': '_where_',
+        '=': '_equals_',
+        '&': '_and_',
+        ' ': '_'
+      };
+      var parsedSlug = stringReplace(slug, replaceObj);
+      var name = this.config.output.filename.replace('[name]', parsedSlug);
+      return name;
+    }
+
+    /**
+     * Returns data using a real URL and the config
+     * @param {String} target - the real URL to mock
+     */
+
+  }, {
+    key: 'request',
+    value: function request(target) {
+      var _parseUrl = parseUrl(target),
+          path = _parseUrl.path,
+          base = _parseUrl.base;
+
+      console.log(base);
+
+      var _path$split$filter = path.split('/').filter(function (a) {
+        return a;
+      }),
+          _path$split$filter2 = _slicedToArray(_path$split$filter, 2),
+          endpoint = _path$split$filter2[0],
+          filename = _path$split$filter2[1];
+
+      console.log({ endpoint: endpoint, filename: filename });
+      var basePath = this.getBasePath(this.config.api.filter(function (api) {
+        return api.url.includes(base);
+      })[0]);
+      var updatedPath = stringReplace(basePath, { '[endpoint]': endpoint });
+      var fixturePath = _path.join(updatedPath, this.getFileName(filename));
+      return this.constructor.loadFile(fixturePath);
+    }
+
+    /**
+     * Loads API data based on the configuration
+     */
+
+  }, {
+    key: 'loadData',
+    value: function () {
+      var _ref3 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4() {
+        var _this2 = this;
+
+        return regeneratorRuntime.wrap(function _callee4$(_context4) {
+          while (1) {
+            switch (_context4.prev = _context4.next) {
+              case 0:
+                _context4.next = 2;
+                return Promise.all(this.config.api.map(function () {
+                  var _ref4 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3(api) {
+                    var fixturePath;
+                    return regeneratorRuntime.wrap(function _callee3$(_context3) {
+                      while (1) {
+                        switch (_context3.prev = _context3.next) {
+                          case 0:
+                            fixturePath = _this2.getBasePath(api);
+                            _context3.prev = 1;
+                            _context3.t0 = fixturePath;
+                            _context3.next = 5;
+                            return _this2.getFixturesDataFromApi(api);
+
+                          case 5:
+                            _context3.t1 = _context3.sent;
+                            return _context3.abrupt('return', {
+                              fixturePath: _context3.t0,
+                              fixtures: _context3.t1
+                            });
+
+                          case 9:
+                            _context3.prev = 9;
+                            _context3.t2 = _context3['catch'](1);
+                            throw _context3.t2;
+
+                          case 12:
+                          case 'end':
+                            return _context3.stop();
+                        }
+                      }
+                    }, _callee3, _this2, [[1, 9]]);
+                  }));
+
+                  return function (_x5) {
+                    return _ref4.apply(this, arguments);
+                  };
+                }()));
+
+              case 2:
+                this.fixtureData = _context4.sent;
+
+              case 3:
+              case 'end':
+                return _context4.stop();
+            }
+          }
+        }, _callee4, this);
+      }));
+
+      function loadData() {
+        return _ref3.apply(this, arguments);
+      }
+
+      return loadData;
+    }()
+
+    /**
+     * Writes a fixture to file based on the parameters
+     * @param {Object} {fixturePath, slug, endpoint, data}
+     */
+
+  }, {
+    key: 'writeFile',
+    value: function () {
+      var _ref5 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee6(_ref6) {
+        var _this3 = this;
+
+        var fixturePath = _ref6.fixturePath,
+            slug = _ref6.slug,
+            endpoint = _ref6.endpoint,
+            data = _ref6.data;
+        var path, filename, file;
+        return regeneratorRuntime.wrap(function _callee6$(_context6) {
+          while (1) {
+            switch (_context6.prev = _context6.next) {
+              case 0:
+                if (!(data && slug && endpoint && fixturePath)) {
+                  _context6.next = 8;
+                  break;
+                }
+
+                path = stringReplace(fixturePath, { '[endpoint]': endpoint });
+                _context6.next = 4;
+                return this.ensureDirectoryExistence(path);
+
+              case 4:
+                filename = this.getFileName(slug);
+                file = _path.join(path, filename);
+                _context6.next = 8;
+                return fs.writeFile(file, JSON.stringify(data, null, 2), function () {
+                  var _ref7 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee5(err) {
+                    return regeneratorRuntime.wrap(function _callee5$(_context5) {
+                      while (1) {
+                        switch (_context5.prev = _context5.next) {
+                          case 0:
+                            if (!err) {
+                              _context5.next = 3;
+                              break;
+                            }
+
+                            console.error(clc.red('\t[failed] '), filename);
+                            return _context5.abrupt('return');
+
+                          case 3:
+                            _context5.next = 5;
+                            return _this3.emittedFiles.push(filename);
+
+                          case 5:
+                            console.log(clc.green('\t[success] '), filename);
+
+                          case 6:
+                          case 'end':
+                            return _context5.stop();
+                        }
+                      }
+                    }, _callee5, _this3);
+                  }));
+
+                  return function (_x7) {
+                    return _ref7.apply(this, arguments);
+                  };
+                }());
+
+              case 8:
+              case 'end':
+                return _context6.stop();
+            }
+          }
+        }, _callee6, this);
+      }));
+
+      function writeFile(_x6) {
+        return _ref5.apply(this, arguments);
+      }
+
+      return writeFile;
+    }()
+
+    /**
+     * Runs the application to create fixtures
+     */
+
+  }, {
+    key: 'run',
+    value: function () {
+      var _ref8 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee9() {
+        var _this4 = this;
+
+        return regeneratorRuntime.wrap(function _callee9$(_context9) {
+          while (1) {
+            switch (_context9.prev = _context9.next) {
+              case 0:
+                if (this.feedback) console.log('\nRetrieving data from APIs...', clc.bgWhite.black('\n\n\t STATUS        REQUEST        '));
+                _context9.prev = 1;
+                _context9.next = 4;
+                return this.loadData();
+
+              case 4:
+                _context9.next = 9;
+                break;
+
+              case 6:
+                _context9.prev = 6;
+                _context9.t0 = _context9['catch'](1);
+                throw _context9.t0;
+
+              case 9:
+                if (this.feedback) console.log('\nWriting API data to files...', clc.bgWhite.black('\n\n\t STATUS        OUTPUT        '));
+                _context9.next = 12;
+                return this.fixtureData.forEach(function () {
+                  var _ref9 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee8(data) {
+                    var fixturePath;
+                    return regeneratorRuntime.wrap(function _callee8$(_context8) {
+                      while (1) {
+                        switch (_context8.prev = _context8.next) {
+                          case 0:
+                            fixturePath = data.fixturePath;
+                            _context8.next = 3;
+                            return data.fixtures.forEach(function () {
+                              var _ref10 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee7(fixture) {
+                                return regeneratorRuntime.wrap(function _callee7$(_context7) {
+                                  while (1) {
+                                    switch (_context7.prev = _context7.next) {
+                                      case 0:
+                                        _context7.next = 2;
+                                        return _this4.writeFile(_extends({ fixturePath: fixturePath }, fixture));
+
+                                      case 2:
+                                      case 'end':
+                                        return _context7.stop();
+                                    }
+                                  }
+                                }, _callee7, _this4);
+                              }));
+
+                              return function (_x9) {
+                                return _ref10.apply(this, arguments);
+                              };
+                            }());
+
+                          case 3:
+                          case 'end':
+                            return _context8.stop();
+                        }
+                      }
+                    }, _callee8, _this4);
+                  }));
+
+                  return function (_x8) {
+                    return _ref9.apply(this, arguments);
+                  };
+                }());
+
+              case 12:
+              case 'end':
+                return _context9.stop();
+            }
+          }
+        }, _callee9, this, [[1, 6]]);
+      }));
+
+      function run() {
+        return _ref8.apply(this, arguments);
+      }
+
+      return run;
+    }()
+  }], [{
+    key: 'loadFile',
+    value: function loadFile(path) {
+      try {
+        var file = require(path); //eslint-disable-line
+        return file;
+      } catch (err) {
+        throw err;
+      }
+    }
+  }]);
+
+  return easyApiFixtures;
+}();
+
+module.exports = easyApiFixtures;
