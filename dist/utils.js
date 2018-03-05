@@ -18,3 +18,16 @@ var stringReplace = exports.stringReplace = function stringReplace(string, mapOb
     return mapObj[matched];
   });
 };
+
+/**
+ * Returns the host, protocol, and path of a url
+ * @param {String} url - the url to parse
+ */
+var parseUrl = exports.parseUrl = function parseUrl(url) {
+  var regEx = /.*:\/\/.*?(?=\/)|mock-api/gm;
+  var base = url.match(regEx)[0];
+  var host = base.split('://')[1];
+  var protocol = base.split('://')[0];
+  var path = url.split(regEx)[1];
+  return { base: base, host: host, protocol: protocol, path: path };
+};
