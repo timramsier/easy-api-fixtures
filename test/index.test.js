@@ -91,7 +91,7 @@ describe('The EasyApiFixtures class should work correctly', () => {
     const filePath = path.join(testPath, 'slug.json');
 
     describe('ensureDirectoryExistence work correctly', () => {
-      easyApi.constructor.ensureDirectoryExistence(testPath);
+      easyApi.ensureDirectoryExistence(testPath);
       it(`should correctly create ${filePath})}`, done => {
         expect(fs.existsSync(testPath)).to.equal(true);
         done();
@@ -129,7 +129,7 @@ describe('The EasyApiFixtures class should work correctly', () => {
 
   describe('External API requests should work', () => {
     describe('getFixturesDataFromApi should work correctly', () => {
-      easyApi.constructor
+      easyApi
         .getFixturesDataFromApi(easyApi.config.api[0], async url => ({
           data: easyApi.request(url),
         }))
