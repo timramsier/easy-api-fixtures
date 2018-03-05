@@ -24,6 +24,7 @@
   "dependencies": {
     "axios": "^0.17.1",
     "babel-polyfill": "^6.26.0",
+    "cli-color": "^1.2.0",
     "lodash": "^4.17.5",
     "mkdirp": "^0.5.1",
     "sanitize-filename": "^1.6.1"

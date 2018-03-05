@@ -1,5 +1,6 @@
 require('babel-polyfill');
 
+const clc = require('cli-color');
 const _path = require('path');
 const axios = require('axios');
 const sanitize = require('sanitize-filename');
@@ -12,15 +13,28 @@ const { stringReplace } = require('./utils');
 // get root project directory
 const appRootDir = _path.resolve('.').split('/node_modules')[0];
 class easyApiFixtures {
-  constructor(configPath = _path.join(appRootDir, 'fixtures.config.js')) {
+  constructor(configPath, feedback = false) {
+    this.requests = [];
+    this.emittedFiles = [];
+    this.configPath =
+      configPath || _path.join(appRootDir, 'fixtures.config.js');
     this.appRootDir = appRootDir;
+    this.feedback = feedback;
     this.defaults = {
       output: {
         filename: '[name].json',
         uglified: false,
       },
     };
-    this.config = this.parseConfig(this.constructor.loadFile(configPath));
+    try {
+      console.log(`\nLoading config: ${this.configPath}`);
+      this.config = this.parseConfig(
+        this.constructor.loadFile(this.configPath)
+      );
+      console.log(clc.green('\nSuccessfully loaded configuration.'));
+    } catch (err) {
+      throw err;
+    }
   }
 
   /**
@@ -41,15 +55,21 @@ class easyApiFixtures {
    * @param {Object} api - An object that holds information on an api from the config file
    * @param {Function} requestFn - (default axios) the promise based http request function
    */
-  static async getFixturesDataFromApi(api, requestFn = axios.get) {
+  async getFixturesDataFromApi(api, requestFn = axios.get) {
     const _getData = (url, endpoint, slug) =>
       requestFn(`${url}/${endpoint}/${slug}`)
-        .then(result => ({
-          slug,
-          endpoint,
-          data: result.data,
-        }))
-        .catch(err => console.log(err));
+        .then(result => {
+          if (this.feedback)
+            console.log(
+              clc.green('\t[success] '),
+              `${url}/${endpoint}/${slug}`
+            );
+          this.requests.push(`${url}/${endpoint}/${slug}`);
+          return { slug, endpoint, data: result.data };
+        })
+        .catch(() =>
+          console.log(clc.green('\t[failed] '), `${url}/${endpoint}/${slug}`)
+        );
     const fixtures = await Promise.all(
       _.flatMap(api.fixture, fixture => {
         const { url } = api;
@@ -57,7 +77,7 @@ class easyApiFixtures {
           _.map(fixture.slug, slug => _getData(url, endpoint, slug))
         );
       })
-    );
+    ).catch(err => console.log(clc.red(err)));
     return fixtures;
   }
 
@@ -65,8 +85,10 @@ class easyApiFixtures {
    * Tests for directory's existence and creates it if it does not
    * @param {String} filePath - path to directory
    */
-  static async ensureDirectoryExistence(filePath) {
+  async ensureDirectoryExistence(filePath) {
     if (!fs.existsSync(filePath)) {
+      if (this.feedback)
+        console.log(clc.yellow(`${filePath} did not exist...creating it.`));
       mkdirp.sync(filePath);
     }
   }
@@ -157,7 +179,7 @@ class easyApiFixtures {
         const fixturePath = this.getBasePath(api);
         return {
           fixturePath,
-          fixtures: await this.constructor.getFixturesDataFromApi(api),
+          fixtures: await this.getFixturesDataFromApi(api),
         };
       })
     );
@@ -169,14 +191,16 @@ class easyApiFixtures {
    */
   async writeFile({ fixturePath, slug, endpoint, data }) {
     const path = stringReplace(fixturePath, { '[endpoint]': endpoint });
-    await this.constructor.ensureDirectoryExistence(path);
-    const file = _path.join(path, this.getFileName(slug));
-    fs.writeFile(file, JSON.stringify(data, null, 2), err => {
+    await this.ensureDirectoryExistence(path);
+    const filename = this.getFileName(slug);
+    const file = _path.join(path, filename);
+    await fs.writeFile(file, JSON.stringify(data, null, 2), async err => {
       if (err) {
-        console.error(err);
+        console.error(clc.red('\t[failed] '), filename);
         return;
       }
-      console.log('\x1b[32m', file, 'has been created', '\x1b[0m');
+      await this.emittedFiles.push(filename);
+      console.log(clc.green('\t[success] '), filename);
     });
   }
 
@@ -184,11 +208,24 @@ class easyApiFixtures {
    * Runs the application to create fixtures
    */
   async run() {
-    await this.loadData();
-    this.fixtureData.forEach(data => {
+    console.log(
+      '\nRetrieving data from APIs...',
+      clc.bgWhite.black('\n\n\t STATUS        REQUEST        ')
+    );
+    try {
+      await this.loadData();
+    } catch (err) {
+      throw err;
+    }
+    if (this.feedback)
+      console.log(
+        '\nWriting API data to files...',
+        clc.bgWhite.black('\n\n\t STATUS        OUTPUT        ')
+      );
+    await this.fixtureData.forEach(async data => {
       const { fixturePath } = data;
-      data.fixtures.forEach(fixture => {
-        this.writeFile({ fixturePath, ...fixture });
+      await data.fixtures.forEach(async fixture => {
+        await this.writeFile({ fixturePath, ...fixture });
       });
     });
   }
